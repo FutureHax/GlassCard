@@ -13,12 +13,10 @@ import android.speech.RecognizerIntent;
 import android.view.MotionEvent;
 
 import com.google.android.glass.app.Card;
-import com.google.android.glass.app.Card.ImageLayout;
 import com.google.android.glass.media.CameraManager;
 import com.google.android.glass.timeline.TimelineManager;
 import com.google.android.glass.touchpad.Gesture;
 import com.google.android.glass.touchpad.GestureDetector;
-import com.t3hh4xx0r.glasscard.CardGenerator.OnCardRequestedListener;
 
 public class MainActivity extends Activity implements
 		GestureDetector.BaseListener {
@@ -30,6 +28,7 @@ public class MainActivity extends Activity implements
 	final static int TAP_SPEAK = 0;
 	final static int TAP_SEND = 1;
 	int TAP_STATE = TAP_SPEAK;
+	String imagePath;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -37,7 +36,7 @@ public class MainActivity extends Activity implements
 		mAudioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
 		mDetector = new GestureDetector(this).setBaseListener(this);
 		rootCard = new Card(this);
-		
+
 		Intent cameraIntent = new Intent(
 				android.provider.MediaStore.ACTION_IMAGE_CAPTURE);
 		startActivityForResult(cameraIntent, REQ_IMAGE);
@@ -57,30 +56,12 @@ public class MainActivity extends Activity implements
 						RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
 				startActivityForResult(intent, REQ_SPEECH);
 			} else {
-				CardGenerator gen = new CardGenerator(this);
-				gen.generatePost(rootCard.getText(),
-						new OnCardRequestedListener() {
-							@Override
-							public void onCardReturned(String path) {
-								File imageFile = new File(path);
-								if (imageFile.exists()) {
-									rootCard = new Card(MainActivity.this);
-									rootCard.setImageLayout(ImageLayout.FULL);
-									rootCard.addImage(Uri.fromFile(new File(path)));
-//									setContentView(rootCard.toView());
-									
-									/*Intent intent = new Intent();
-									intent.setAction(android.content.Intent.ACTION_SEND);
-									intent.setDataAndType(Uri
-											.fromFile(imageFile),
-											"image/png");
-									startActivity(intent);*/
-									TimelineManager tManager = TimelineManager.from(MainActivity.this);
-									tManager.insert(rootCard);
-									finish();
-								}
-							}
-						});
+				rootCard.setFootnote("");
+				TimelineManager tManager = TimelineManager
+						.from(MainActivity.this);
+				tManager.insert(rootCard);
+				finish();
+
 			}
 			return true;
 		}
@@ -93,9 +74,12 @@ public class MainActivity extends Activity implements
 		if (requestCode == REQ_IMAGE) {
 			File image = new File(
 					data.getStringExtra(CameraManager.EXTRA_THUMBNAIL_FILE_PATH));
+
 			if (!image.exists()) {
 				return;
 			}
+			imagePath = data
+					.getStringExtra(CameraManager.EXTRA_PICTURE_FILE_PATH);
 			Uri imageUri = Uri.fromFile(image);
 			rootCard.addImage(imageUri);
 			rootCard.setFootnote("Tap to speak a message");
